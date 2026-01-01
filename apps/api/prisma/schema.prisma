@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  INSTRUCTOR
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+}
+
+model DiveSite {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  lat         Float
+  lng         Float
+  difficulty  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events Event[]
+}
+
+enum EventType {
+  LAKE_DIVE
+  TRAVEL
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  DONE
+}
+
+enum ReservationStatus {
+  RESERVED
+  CANCELLED
+  CHECKED_IN
+}
+
+model Event {
+  id     String      @id @default(cuid())
+  type   EventType
+  status EventStatus @default(DRAFT)
+
+  title        String
+  description  String?
+  meetingPoint String?
+
+  startAt DateTime
+  endAt   DateTime?
+
+  capacity Int
+  priceArs Int
+
+  minLevel String?
+  maxDepth Int?
+
+  siteId String?
+  site   DiveSite? @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations EventReservation[]
+}
+
+model EventReservation {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // MVP sin auth: datos básicos del cliente
+  userName String
+  phone    String?
+
+  status ReservationStatus @default(RESERVED)
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+}
